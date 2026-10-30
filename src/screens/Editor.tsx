@@ -123,7 +123,7 @@ export default function Editor() {
   const [shapes, setShapes] = useState<Shape[]>(() => {
     if (!id) return createInitialShapes();
     const project = getProject(id);
-    if (!project || project.shapes.length === 0) return createInitialShapes();
+    if (!project) return createInitialShapes();
     try { return restoreShapes(project.shapes); } catch { return createInitialShapes(); }
   });
   const [saveMessage, setSaveMessage] = useState("");
@@ -175,6 +175,8 @@ export default function Editor() {
   const exportProject = () => {
     const data = {
       projectId: id,
+      name: getProject(id ?? "")?.name ?? `Проект ${id ?? ""}`,
+      exportedAt: new Date().toISOString(),
       shapes: shapes.map((shape) => shape.toJSON()),
     };
     const blob = new Blob([JSON.stringify(data, null, 2)], {
@@ -185,7 +187,7 @@ export default function Editor() {
     link.href = url;
     link.download = `vector-engine-${id ?? "project"}.json`;
     link.click();
-    URL.revokeObjectURL(url);
+    window.setTimeout(() => URL.revokeObjectURL(url), 1000);
   };
 
   useEffect(() => {
