@@ -16,7 +16,7 @@ import {
   Triangle,
 } from "lucide-react";
 import CanvasScene, { type EditorTool } from "../components/CanvasScene";
-import { getProject, restoreShapes, saveProject } from "../lib/projects";
+import { exportProjectFile, loadProject, restoreShapes, saveProject, type Project } from "../lib/projects";
 import type { LineAlg } from "../lib/raster/RasterRenderer";
 import {
   CubicBezier,
@@ -120,14 +120,37 @@ export default function Editor() {
   const navigate = useNavigate();
   const [tool, setTool] = useState<EditorTool>("select");
   const [lineAlg, setLineAlg] = useState<LineAlg>("bresenham");
-  const [shapes, setShapes] = useState<Shape[]>(() => {
-    if (!id) return createInitialShapes();
-    const project = getProject(id);
-    if (!project) return createInitialShapes();
-    try { return restoreShapes(project.shapes); } catch { return createInitialShapes(); }
-  });
+  const [shapes, setShapes] = useState<Shape[]>([]);
   const [saveMessage, setSaveMessage] = useState("");
   const [selectedId, setSelectedId] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    const load = async () => {
+      if (!id) {
+        setShapes([]);
+        return;
+      }
+      try {
+        const project = await loadProject(id);
+        if (cancelled) return;
+        if (!project) {
+          setShapes([]);
+          setLineAlg("bresenham");
+          return;
+        }
+        setShapes(restoreShapes(project.shapes));
+        setLineAlg(project.lineAlg ?? "bresenham");
+      } catch {
+        if (!cancelled) {
+          setShapes([]);
+          setSaveMessage("Не удалось загрузить проект");
+        }
+      }
+    };
+    void load();
+    return () => { cancelled = true; };
+  }, [id]);
 
   const selectedShape = shapes.find((shape) => shape.id === selectedId) ?? null;
 
@@ -159,37 +182,44 @@ export default function Editor() {
     });
   };
 
-  const saveToGallery = () => {
+  const saveToGallery = async () => {
     if (!id) return;
-    const existing = getProject(id);
-    saveProject({
-      id,
-      name: existing?.name ?? `Проект ${id}`,
-      date: new Date().toLocaleDateString("ru-RU"),
-      shapes: shapes.map((shape) => shape.toJSON()),
-    });
-    setSaveMessage("Сохранено в галерею");
-    window.setTimeout(() => setSaveMessage(""), 2500);
+    try {
+      const existing = await loadProject(id);
+      const now = new Date().toISOString();
+      await saveProject({
+        id,
+        name: existing?.name ?? `Проект ${id}`,
+        createdAt: existing?.createdAt ?? now,
+        updatedAt: now,
+        lineAlg,
+        shapes: shapes.map((shape) => shape.toJSON()),
+      });
+      setSaveMessage("Проект сохранён в файл");
+    } catch (error) {
+      setSaveMessage(error instanceof Error ? `Ошибка сохранения: ${error.message}` : "Ошибка сохранения проекта");
+    }
+    window.setTimeout(() => setSaveMessage(""), 3500);
   };
 
-  const exportProject = () => {
-    const data = {
-      projectId: id,
-      name: getProject(id ?? "")?.name ?? `Проект ${id ?? ""}`,
-      exportedAt: new Date().toISOString(),
-      shapes: shapes.map((shape) => shape.toJSON()),
-    };
-    const blob = new Blob([JSON.stringify(data, null, 2)], {
-      type: "application/json",
-    });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = `vector-engine-${id ?? "project"}.json`;
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
-    window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+  const exportProject = async () => {
+    const now = new Date().toISOString();
+    try {
+      const existing = id ? await loadProject(id) : undefined;
+      const project: Project = {
+        id: id ?? String(Date.now()),
+        name: existing?.name ?? `Проект ${id ?? ""}`,
+        createdAt: existing?.createdAt ?? now,
+        updatedAt: now,
+        lineAlg,
+        shapes: shapes.map((shape) => shape.toJSON()),
+      };
+      const exported = await exportProjectFile(project);
+      setSaveMessage(exported ? "JSON-файл экспортирован" : "Экспорт отменён");
+    } catch (error) {
+      setSaveMessage(error instanceof Error ? `Ошибка экспорта: ${error.message}` : "Ошибка экспорта JSON");
+    }
+    window.setTimeout(() => setSaveMessage(""), 3500);
   };
 
   useEffect(() => {
