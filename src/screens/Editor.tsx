@@ -186,7 +186,9 @@ export default function Editor() {
     const link = document.createElement("a");
     link.href = url;
     link.download = `vector-engine-${id ?? "project"}.json`;
+    document.body.appendChild(link);
     link.click();
+    link.remove();
     window.setTimeout(() => URL.revokeObjectURL(url), 1000);
   };
 
