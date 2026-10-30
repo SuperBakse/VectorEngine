@@ -16,7 +16,7 @@ import {
   Triangle,
   type Shape,
 } from "../lib/shapes";
-import type { Point2D, Mat3 } from "../lib/math/mat3";
+import type { Point2D } from "../lib/math/mat3";
 import type { Bounds, Transform } from "../lib/shapes/types";
 import {
   findTopmostShapeAt,
@@ -301,7 +301,7 @@ export default function CanvasScene({
       renderer.dispose();
       rendererRef.current = null;
     };
-  }, [lineAlg]);
+  }, []);
 
   const toScenePoint = (event: PointerEvent<HTMLCanvasElement>): Point2D => {
     const rect = event.currentTarget.getBoundingClientRect();
