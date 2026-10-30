@@ -16,6 +16,7 @@ import {
   Triangle,
 } from "lucide-react";
 import CanvasScene, { type EditorTool } from "../components/CanvasScene";
+import { getProject, restoreShapes, saveProject } from "../lib/projects";
 import type { LineAlg } from "../lib/raster/RasterRenderer";
 import {
   CubicBezier,
@@ -119,7 +120,13 @@ export default function Editor() {
   const navigate = useNavigate();
   const [tool, setTool] = useState<EditorTool>("select");
   const [lineAlg, setLineAlg] = useState<LineAlg>("bresenham");
-  const [shapes, setShapes] = useState<Shape[]>(createInitialShapes);
+  const [shapes, setShapes] = useState<Shape[]>(() => {
+    if (!id) return createInitialShapes();
+    const project = getProject(id);
+    if (!project || project.shapes.length === 0) return createInitialShapes();
+    try { return restoreShapes(project.shapes); } catch { return createInitialShapes(); }
+  });
+  const [saveMessage, setSaveMessage] = useState("");
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
   const selectedShape = shapes.find((shape) => shape.id === selectedId) ?? null;
@@ -150,6 +157,19 @@ export default function Editor() {
       [next[from], next[to]] = [next[to], next[from]];
       return next;
     });
+  };
+
+  const saveToGallery = () => {
+    if (!id) return;
+    const existing = getProject(id);
+    saveProject({
+      id,
+      name: existing?.name ?? `Проект ${id}`,
+      date: new Date().toLocaleDateString("ru-RU"),
+      shapes: shapes.map((shape) => shape.toJSON()),
+    });
+    setSaveMessage("Сохранено в галерею");
+    window.setTimeout(() => setSaveMessage(""), 2500);
   };
 
   const exportProject = () => {
@@ -206,14 +226,25 @@ export default function Editor() {
           <ArrowLeft size={16} /> Назад
         </button>
         <div className="font-semibold">Редактор проекта №{id}</div>
-        <button
-          onClick={exportProject}
-          className="flex items-center gap-2 rounded bg-blue-600 px-3 py-1.5 transition-colors hover:bg-blue-500"
-          title="Экспортировать объекты в JSON"
-        >
-          <Save size={16} /> Экспорт
-          <FileDown size={14} />
-        </button>
+        <div className="flex items-center gap-2">
+          {saveMessage && <span role="status" className="text-xs text-emerald-300">{saveMessage}</span>}
+          <button
+            type="button"
+            onClick={saveToGallery}
+            className="flex items-center gap-2 rounded bg-emerald-700 px-3 py-1.5 transition-colors hover:bg-emerald-600"
+            title="Сохранить проект в галерею"
+          >
+            <Save size={16} /> Сохранить
+          </button>
+          <button
+            type="button"
+            onClick={exportProject}
+            className="flex items-center gap-2 rounded bg-blue-600 px-3 py-1.5 transition-colors hover:bg-blue-500"
+            title="Экспортировать проект в JSON"
+          >
+            <FileDown size={16} /> Экспорт
+          </button>
+        </div>
       </header>
 
       <div className="flex min-h-0 flex-1">
