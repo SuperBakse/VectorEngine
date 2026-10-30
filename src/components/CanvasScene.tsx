@@ -1,11 +1,11 @@
-import { useEffect, useRef } from "react";
-import type { Dispatch, PointerEvent, SetStateAction } from "react";
+import { useEffect, useRef } from 'react';
+import type { Dispatch, PointerEvent, SetStateAction } from 'react';
 
 import {
   RasterRenderer,
   type LineAlg,
   type RGBA,
-} from "../lib/raster/RasterRenderer";
+} from '../lib/raster/RasterRenderer';
 import {
   Line,
   Oval,
@@ -13,9 +13,9 @@ import {
   Rect,
   Triangle,
   type Shape,
-} from "../lib/shapes";
-import type { Point2D } from "../lib/math/mat3";
-import type { Bounds, Transform } from "../lib/shapes/types";
+} from '../lib/shapes';
+import type { Point2D } from '../lib/math/mat3';
+import type { Bounds, Transform } from '../lib/shapes/types';
 import {
   findTopmostShapeAt,
   getResizeHandleLocalPoint,
@@ -26,15 +26,15 @@ import {
   resizeShapeFromStart,
   rotateShapeFromStart,
   type ResizeHandle,
-} from "../lib/editor/interaction";
+} from '../lib/editor/interaction';
 
 export type EditorTool =
-  | "select"
-  | "rect"
-  | "oval"
-  | "line"
-  | "triangle"
-  | "path";
+  | 'select'
+  | 'rect'
+  | 'oval'
+  | 'line'
+  | 'triangle'
+  | 'path';
 
 interface CanvasSceneProps {
   lineAlg: LineAlg;
@@ -48,14 +48,14 @@ interface CanvasSceneProps {
 
 type Gesture =
   | {
-      kind: "move" | "rotate";
+      kind: 'move' | 'rotate';
       pointerId: number;
       shapeId: string;
       startPoint: Point2D;
       initialTransform: Transform;
     }
   | {
-      kind: "resize";
+      kind: 'resize';
       pointerId: number;
       shapeId: string;
       initialTransform: Transform;
@@ -63,7 +63,7 @@ type Gesture =
       handle: ResizeHandle;
     }
   | {
-      kind: "control";
+      kind: 'control';
       pointerId: number;
       shapeId: string;
       initialTransform: Transform;
@@ -76,7 +76,7 @@ const WHITE: RGBA = { r: 255, g: 255, b: 255, a: 255 };
 const DARK: RGBA = { r: 30, g: 41, b: 59, a: 255 };
 
 const RESIZE_HANDLES: ResizeHandle[] = [
-  "nw", "n", "ne", "e", "se", "s", "sw", "w",
+  'nw', 'n', 'ne', 'e', 'se', 's', 'sw', 'w',
 ];
 
 const HANDLE_HIT_RADIUS = 10;
@@ -90,39 +90,39 @@ function createShape(tool: EditorTool, point: Point2D): Shape | null {
   const y = point.y;
 
   switch (tool) {
-    case "rect":
+    case 'rect':
       return new Rect(x, y, 150, 100, {
-        fillStyle: "#60a5fa",
+        fillStyle: '#60a5fa',
         fillOpacity: 0.28,
-        strokeStyle: "#2563eb",
+        strokeStyle: '#2563eb',
         strokeWidth: 2,
       });
-    case "oval":
+    case 'oval':
       return new Oval(x, y, 76, 52, {
-        fillStyle: "#a78bfa",
+        fillStyle: '#a78bfa',
         fillOpacity: 0.3,
-        strokeStyle: "#7c3aed",
+        strokeStyle: '#7c3aed',
         strokeWidth: 2,
       });
-    case "line":
+    case 'line':
       return new Line(x - 75, y - 25, x + 75, y + 25, {
         fillStyle: null,
-        strokeStyle: "#16a34a",
+        strokeStyle: '#16a34a',
         strokeWidth: 4,
       });
-    case "triangle":
+    case 'triangle':
       return new Triangle(
         { x, y: y - 65 },
         { x: x + 70, y: y + 55 },
         { x: x - 70, y: y + 55 },
         {
-          fillStyle: "#fbbf24",
+          fillStyle: '#fbbf24',
           fillOpacity: 0.32,
-          strokeStyle: "#d97706",
+          strokeStyle: '#d97706',
           strokeWidth: 2,
         }
       );
-    case "path":
+    case 'path':
       return new PathBezier(
         [
           { x: x - 100, y: y + 15 },
@@ -130,11 +130,11 @@ function createShape(tool: EditorTool, point: Point2D): Shape | null {
           { x: x + 35, y: y + 65 },
           { x: x + 100, y: y - 15 },
         ],
-        "catmull",
+        'catmull',
         false,
         {
           fillStyle: null,
-          strokeStyle: "#0d9488",
+          strokeStyle: '#0d9488',
           strokeWidth: 4,
         }
       );
@@ -272,7 +272,7 @@ export default function CanvasScene({
           rotationLocal.x,
           rotationLocal.y
         );
-        const topLocal = getResizeHandleLocalPoint(bounds, "n");
+        const topLocal = getResizeHandleLocalPoint(bounds, 'n');
         const topPoint = selected.transformPointToDevice(topLocal.x, topLocal.y);
         renderer.strokeLine(
           topPoint.x * dpr,
@@ -318,21 +318,21 @@ export default function CanvasScene({
       const target = current.find((shape) => shape.id === gesture.shapeId);
       if (!target) return current;
 
-      if (gesture.kind === "move") {
+      if (gesture.kind === 'move') {
         moveShapeFromStart(
           target,
           gesture.initialTransform,
           gesture.startPoint,
           point
         );
-      } else if (gesture.kind === "rotate") {
+      } else if (gesture.kind === 'rotate') {
         rotateShapeFromStart(
           target,
           gesture.initialTransform,
           gesture.startPoint,
           point
         );
-      } else if (gesture.kind === "resize") {
+      } else if (gesture.kind === 'resize') {
         resizeShapeFromStart(
           target,
           gesture.initialTransform,
@@ -367,12 +367,12 @@ export default function CanvasScene({
     if (event.button !== 0) return;
     const point = toScenePoint(event);
 
-    if (tool !== "select") {
+    if (tool !== 'select') {
       const created = createShape(tool, point);
       if (created) {
         setShapes((current) => [...current, created]);
         onSelect(created.id);
-        onToolChange("select");
+        onToolChange('select');
       }
       return;
     }
@@ -393,7 +393,7 @@ export default function CanvasScene({
 
         if (controlIndex >= 0) {
           gestureRef.current = {
-            kind: "control",
+            kind: 'control',
             pointerId: event.pointerId,
             shapeId: selected.id,
             initialTransform: { ...selected.transform },
@@ -410,7 +410,7 @@ export default function CanvasScene({
         );
         if (distance(rotationPoint, point) <= HANDLE_HIT_RADIUS) {
           gestureRef.current = {
-            kind: "rotate",
+            kind: 'rotate',
             pointerId: event.pointerId,
             shapeId: selected.id,
             startPoint: point,
@@ -431,7 +431,7 @@ export default function CanvasScene({
 
         if (resizeHandle) {
           gestureRef.current = {
-            kind: "resize",
+            kind: 'resize',
             pointerId: event.pointerId,
             shapeId: selected.id,
             initialTransform: { ...selected.transform },
@@ -451,7 +451,7 @@ export default function CanvasScene({
     onSelect(hit?.id ?? null);
     if (hit) {
       gestureRef.current = {
-        kind: "move",
+        kind: 'move',
         pointerId: event.pointerId,
         shapeId: hit.id,
         startPoint: point,
@@ -498,14 +498,14 @@ export default function CanvasScene({
   return (
     <div
       ref={containerRef}
-      className="h-full w-full overflow-hidden bg-white"
+      className='h-full w-full overflow-hidden bg-white'
     >
       <canvas
         ref={canvasRef}
-        className="block h-full w-full touch-none"
+        className='block h-full w-full touch-none'
         style={{
-          cursor: tool === "select" ? "default" : "crosshair",
-          touchAction: "none",
+          cursor: tool === 'select' ? 'default' : 'crosshair',
+          touchAction: 'none',
         }}
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
@@ -517,7 +517,7 @@ export default function CanvasScene({
           cancelAnimationFrame(gestureRafRef.current);
           gestureRafRef.current = 0;
         }}
-        aria-label="Холст редактора векторных объектов"
+        aria-label='Холст редактора векторных объектов'
       />
     </div>
   );
