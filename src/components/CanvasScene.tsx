@@ -7,11 +7,9 @@ import {
   type RGBA,
 } from "../lib/raster/RasterRenderer";
 import {
-  CubicBezier,
   Line,
   Oval,
   PathBezier,
-  QuadraticBezier,
   Rect,
   Triangle,
   type Shape,
