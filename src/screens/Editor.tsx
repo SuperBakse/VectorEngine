@@ -16,15 +16,9 @@ import {
   Triangle,
 } from "lucide-react";
 import CanvasScene, { type EditorTool } from "../components/CanvasScene";
+import { exportProjectFile, loadProject, restoreShapes, saveProject, type Project } from "../lib/projects";
 import type { LineAlg } from "../lib/raster/RasterRenderer";
-import {
-  CubicBezier,
-  Oval,
-  PathBezier,
-  Rect,
-  Triangle as TriangleShape,
-  type Shape,
-} from "../lib/shapes";
+import type { Shape } from "../lib/shapes";
 
 const TOOLS: {
   id: EditorTool;
@@ -38,60 +32,6 @@ const TOOLS: {
   { id: "triangle", label: "Треугольник", icon: Triangle },
   { id: "path", label: "Кривая Безье", icon: PenLine },
 ];
-
-function createInitialShapes(): Shape[] {
-  return [
-    new Rect(210, 150, 150, 105, {
-      fillStyle: "#60a5fa",
-      fillOpacity: 0.28,
-      strokeStyle: "#2563eb",
-      strokeWidth: 2,
-    }),
-    new Oval(455, 155, 76, 52, {
-      fillStyle: "#a78bfa",
-      fillOpacity: 0.3,
-      strokeStyle: "#7c3aed",
-      strokeWidth: 2,
-    }),
-    new TriangleShape(
-      { x: 145, y: 345 },
-      { x: 215, y: 465 },
-      { x: 75, y: 465 },
-      {
-        fillStyle: "#fbbf24",
-        fillOpacity: 0.32,
-        strokeStyle: "#d97706",
-        strokeWidth: 2,
-      }
-    ),
-    new CubicBezier(
-      { x: 340, y: 370 },
-      { x: 405, y: 250 },
-      { x: 500, y: 490 },
-      { x: 575, y: 355 },
-      {
-        fillStyle: null,
-        strokeStyle: "#0d9488",
-        strokeWidth: 4,
-      }
-    ),
-    new PathBezier(
-      [
-        { x: 650, y: 365 },
-        { x: 715, y: 300 },
-        { x: 790, y: 420 },
-        { x: 860, y: 340 },
-      ],
-      "catmull",
-      false,
-      {
-        fillStyle: null,
-        strokeStyle: "#e11d48",
-        strokeWidth: 4,
-      }
-    ),
-  ];
-}
 
 function shapeLabel(shape: Shape): string {
   switch (shape.type) {
@@ -119,8 +59,37 @@ export default function Editor() {
   const navigate = useNavigate();
   const [tool, setTool] = useState<EditorTool>("select");
   const [lineAlg, setLineAlg] = useState<LineAlg>("bresenham");
-  const [shapes, setShapes] = useState<Shape[]>(createInitialShapes);
+  const [shapes, setShapes] = useState<Shape[]>([]);
+  const [saveMessage, setSaveMessage] = useState("");
   const [selectedId, setSelectedId] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    const load = async () => {
+      if (!id) {
+        setShapes([]);
+        return;
+      }
+      try {
+        const project = await loadProject(id);
+        if (cancelled) return;
+        if (!project) {
+          setShapes([]);
+          setLineAlg("bresenham");
+          return;
+        }
+        setShapes(restoreShapes(project.shapes));
+        setLineAlg(project.lineAlg ?? "bresenham");
+      } catch {
+        if (!cancelled) {
+          setShapes([]);
+          setSaveMessage("Не удалось загрузить проект");
+        }
+      }
+    };
+    void load();
+    return () => { cancelled = true; };
+  }, [id]);
 
   const selectedShape = shapes.find((shape) => shape.id === selectedId) ?? null;
 
@@ -152,20 +121,44 @@ export default function Editor() {
     });
   };
 
-  const exportProject = () => {
-    const data = {
-      projectId: id,
-      shapes: shapes.map((shape) => shape.toJSON()),
-    };
-    const blob = new Blob([JSON.stringify(data, null, 2)], {
-      type: "application/json",
-    });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = `vector-engine-${id ?? "project"}.json`;
-    link.click();
-    URL.revokeObjectURL(url);
+  const saveToGallery = async () => {
+    if (!id) return;
+    try {
+      const existing = await loadProject(id);
+      const now = new Date().toISOString();
+      await saveProject({
+        id,
+        name: existing?.name ?? `Проект ${id}`,
+        createdAt: existing?.createdAt ?? now,
+        updatedAt: now,
+        lineAlg,
+        shapes: shapes.map((shape) => shape.toJSON()),
+      });
+      setSaveMessage("Проект сохранён в файл");
+    } catch (error) {
+      setSaveMessage(error instanceof Error ? `Ошибка сохранения: ${error.message}` : "Ошибка сохранения проекта");
+    }
+    window.setTimeout(() => setSaveMessage(""), 3500);
+  };
+
+  const exportProject = async () => {
+    const now = new Date().toISOString();
+    try {
+      const existing = id ? await loadProject(id) : undefined;
+      const project: Project = {
+        id: id ?? String(Date.now()),
+        name: existing?.name ?? `Проект ${id ?? ""}`,
+        createdAt: existing?.createdAt ?? now,
+        updatedAt: now,
+        lineAlg,
+        shapes: shapes.map((shape) => shape.toJSON()),
+      };
+      const exported = await exportProjectFile(project);
+      setSaveMessage(exported ? "JSON-файл экспортирован" : "Экспорт отменён");
+    } catch (error) {
+      setSaveMessage(error instanceof Error ? `Ошибка экспорта: ${error.message}` : "Ошибка экспорта JSON");
+    }
+    window.setTimeout(() => setSaveMessage(""), 3500);
   };
 
   useEffect(() => {
@@ -206,14 +199,25 @@ export default function Editor() {
           <ArrowLeft size={16} /> Назад
         </button>
         <div className="font-semibold">Редактор проекта №{id}</div>
-        <button
-          onClick={exportProject}
-          className="flex items-center gap-2 rounded bg-blue-600 px-3 py-1.5 transition-colors hover:bg-blue-500"
-          title="Экспортировать объекты в JSON"
-        >
-          <Save size={16} /> Экспорт
-          <FileDown size={14} />
-        </button>
+        <div className="flex items-center gap-2">
+          {saveMessage && <span role="status" className="text-xs text-emerald-300">{saveMessage}</span>}
+          <button
+            type="button"
+            onClick={saveToGallery}
+            className="flex items-center gap-2 rounded bg-emerald-700 px-3 py-1.5 transition-colors hover:bg-emerald-600"
+            title="Сохранить проект в галерею"
+          >
+            <Save size={16} /> Сохранить
+          </button>
+          <button
+            type="button"
+            onClick={exportProject}
+            className="flex items-center gap-2 rounded bg-blue-600 px-3 py-1.5 transition-colors hover:bg-blue-500"
+            title="Экспортировать проект в JSON"
+          >
+            <FileDown size={16} /> Экспорт
+          </button>
+        </div>
       </header>
 
       <div className="flex min-h-0 flex-1">
