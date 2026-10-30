@@ -113,6 +113,32 @@ describe('editor interaction helpers', () => {
     expect(Math.abs(shape.transform.scaleY) * 80).toBeGreaterThanOrEqual(18);
   });
 
+  test('flips the dragged axis when a resize handle crosses its opposite side', () => {
+    const shape = new Rect(50, 50, 100, 80);
+    const initial = { ...shape.transform };
+    const bounds = shape.getLocalBounds();
+    const anchorLocal = { x: bounds.minX, y: bounds.minY };
+    const initialAnchor = shape.transformPointToDevice(
+      anchorLocal.x,
+      anchorLocal.y
+    );
+    const crossedPoint = shape.transformPointToDevice(
+      bounds.minX - 20,
+      bounds.maxY + 10
+    );
+
+    resizeShapeFromStart(shape, initial, bounds, 'se', crossedPoint);
+
+    const nextAnchor = shape.transformPointToDevice(
+      anchorLocal.x,
+      anchorLocal.y
+    );
+    expect(shape.transform.scaleX).toBeLessThan(0);
+    expect(shape.transform.scaleY).toBeGreaterThan(0);
+    expect(nextAnchor.x).toBeCloseTo(initialAnchor.x);
+    expect(nextAnchor.y).toBeCloseTo(initialAnchor.y);
+  });
+
   test('converts scene points to local coordinates with rotation and scale', () => {
     const shape = new Rect(20, 30, 90, 50);
     shape.transform.rotation = 0.4;
