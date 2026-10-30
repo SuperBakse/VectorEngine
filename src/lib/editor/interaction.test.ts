@@ -1,5 +1,5 @@
-import { describe, expect, test } from "vitest";
-import { Rect } from "../shapes/Rect";
+import { describe, expect, test } from 'vitest';
+import { Rect } from '../shapes/Rect';
 import {
   findTopmostShapeAt,
   moveShapeFromStart,
@@ -7,17 +7,17 @@ import {
   resizeShapeFromStart,
   rotateShapeFromStart,
   type ResizeHandle,
-} from "./interaction";
+} from './interaction';
 
-describe("editor interaction helpers", () => {
-  test("selects the uppermost shape when objects overlap", () => {
+describe('editor interaction helpers', () => {
+  test('selects the uppermost shape when objects overlap', () => {
     const lower = new Rect(50, 50, 80, 60);
     const upper = new Rect(50, 50, 40, 30);
 
     expect(findTopmostShapeAt([lower, upper], { x: 50, y: 50 })).toBe(upper);
   });
 
-  test("moves from the initial transform without accumulating pointer error", () => {
+  test('moves from the initial transform without accumulating pointer error', () => {
     const shape = new Rect(100, 80, 40, 30);
     const initial = { ...shape.transform };
 
@@ -40,7 +40,7 @@ describe("editor interaction helpers", () => {
     expect(shape.transform.y).toBe(85);
   });
 
-  test("rotates around the shape origin", () => {
+  test('rotates around the shape origin', () => {
     const shape = new Rect(100, 100, 80, 40);
     const initial = { ...shape.transform };
 
@@ -56,7 +56,7 @@ describe("editor interaction helpers", () => {
     expect(shape.transform.y).toBe(100);
   });
 
-  test("resizes a rotated shape and keeps the opposite corner fixed", () => {
+  test('resizes a rotated shape and keeps the opposite corner fixed', () => {
     const shape = new Rect(120, 90, 100, 60);
     shape.transform.rotation = Math.PI / 4;
     const initial = { ...shape.transform };
@@ -76,7 +76,7 @@ describe("editor interaction helpers", () => {
       shape,
       initial,
       bounds,
-      "se",
+      'se',
       pointerScene
     );
 
@@ -91,7 +91,7 @@ describe("editor interaction helpers", () => {
     );
   });
 
-  test("does not allow a resize handle to shrink an object below the minimum", () => {
+  test('does not allow a resize handle to shrink an object below the minimum', () => {
     const shape = new Rect(50, 50, 100, 80);
     const initial = { ...shape.transform };
     const bounds = shape.getLocalBounds();
@@ -104,7 +104,7 @@ describe("editor interaction helpers", () => {
       shape,
       initial,
       bounds,
-      "se" as ResizeHandle,
+      'se' as ResizeHandle,
       almostCollapsed,
       18
     );
@@ -113,7 +113,7 @@ describe("editor interaction helpers", () => {
     expect(Math.abs(shape.transform.scaleY) * 80).toBeGreaterThanOrEqual(18);
   });
 
-  test("converts scene points to local coordinates with rotation and scale", () => {
+  test('converts scene points to local coordinates with rotation and scale', () => {
     const shape = new Rect(20, 30, 90, 50);
     shape.transform.rotation = 0.4;
     shape.transform.scaleX = 1.5;
