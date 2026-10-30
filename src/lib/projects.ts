@@ -1,6 +1,7 @@
 import {
   CubicBezier,
   Line,
+  QuadraticBezier,
   Oval,
   PathBezier,
   Rect,
@@ -67,9 +68,15 @@ export function restoreShapes(data: ShapeJSON[]): Shape[] {
       case "oval":
         shape = new Oval(0, 0, Number(g.rx), Number(g.ry), style);
         break;
-      case "line":
-        shape = new Line(Number(g.ax), Number(g.ay), Number(g.bx), Number(g.by), style);
+      case "line": {
+        const line = new Line(0, 0, 0, 0, style);
+        line.ax = Number(g.ax);
+        line.ay = Number(g.ay);
+        line.bx = Number(g.bx);
+        line.by = Number(g.by);
+        shape = line;
         break;
+      }
       case "triangle": {
         const vertices = g.vertices as Point2D[];
         shape = new Triangle(point(vertices[0]), point(vertices[1]), point(vertices[2]), style);
@@ -82,7 +89,7 @@ export function restoreShapes(data: ShapeJSON[]): Shape[] {
       }
       case "quadratic-bezier": {
         const points = g.controlPoints as Point2D[];
-        shape = new (requireQuadratic())(point(points[0]), point(points[1]), point(points[2]), style);
+        shape = new QuadraticBezier(point(points[0]), point(points[1]), point(points[2]), style);
         break;
       }
       case "path-bezier":
@@ -101,8 +108,3 @@ export function restoreShapes(data: ShapeJSON[]): Shape[] {
   });
 }
 
-function requireQuadratic() {
-  return QuadraticBezier;
-}
-
-import { QuadraticBezier } from "./shapes";
