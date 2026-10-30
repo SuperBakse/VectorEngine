@@ -121,9 +121,9 @@ describe("editor interaction helpers", () => {
     const local = { x: 12, y: -8 };
     const scene = shape.transformPointToDevice(local.x, local.y);
 
-    expect(pointToLocal(shape.transform, scene)).toMatchObject({
-      x: expect.closeTo(local.x),
-      y: expect.closeTo(local.y),
-    });
+    const result = pointToLocal(shape.transform, scene);
+    expect(result).not.toBeNull();
+    expect(result?.x).toBeCloseTo(local.x);
+    expect(result?.y).toBeCloseTo(local.y);
   });
 });
