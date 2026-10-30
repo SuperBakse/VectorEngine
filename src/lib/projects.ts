@@ -187,73 +187,165 @@ export async function importProjectFile(): Promise<Project | undefined> {
   });
 }
 
-export function restoreShapes(data: ShapeJSON[]): Shape[] {
-  return data.map((item) => {
-    const geometry = item.geometry as Record<string, unknown>;
-    const style = item.style as Partial<ShapeStyle>;
-    const point = (value: unknown): Point2D => {
-      const candidate = value as Point2D;
-      if (!candidate || !Number.isFinite(candidate.x) || !Number.isFinite(candidate.y)) {
-        throw new Error("Некорректные координаты фигуры");
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+/**
+ * Восстанавливает экземпляр фигуры из JSON.
+ * Неизвестные типы и некорректные записи пропускаются.
+ */
+export function shapeFromJSON(data: ShapeJSON): Shape | undefined {
+  try {
+    if (!isRecord(data) || !isRecord(data.geometry)) return undefined;
+
+    const geometry = data.geometry;
+    const style = isRecord(data.style) ? data.style as Partial<ShapeStyle> : {};
+    const getNumber = (key: string): number | undefined => {
+      const value = geometry[key];
+      return typeof value === "number" && Number.isFinite(value) ? value : undefined;
+    };
+    const getPoint = (value: unknown): Point2D | undefined => {
+      if (!isRecord(value)) return undefined;
+      const { x, y } = value;
+      if (typeof x !== "number" || !Number.isFinite(x) ||
+          typeof y !== "number" || !Number.isFinite(y)) {
+        return undefined;
       }
-      return { x: candidate.x, y: candidate.y };
+      return { x, y };
+    };
+    const getPoints = (key: string, expectedLength?: number): Point2D[] | undefined => {
+      const value = geometry[key];
+      if (!Array.isArray(value) ||
+          (expectedLength !== undefined && value.length !== expectedLength)) {
+        return undefined;
+      }
+      const points: Point2D[] = [];
+      for (const entry of value) {
+        const point = getPoint(entry);
+        if (!point) return undefined;
+        points.push(point);
+      }
+      return points;
     };
 
     let shape: Shape;
-    switch (item.type) {
-      case "rect":
-        shape = new Rect(0, 0, Number(geometry.w), Number(geometry.h), style);
+
+    switch (data.type) {
+      case "rect": {
+        const width = getNumber("w");
+        const height = getNumber("h");
+        if (width === undefined || height === undefined) return undefined;
+        shape = new Rect(0, 0, width, height, style);
         break;
-      case "oval":
-        shape = new Oval(0, 0, Number(geometry.rx), Number(geometry.ry), style);
+      }
+      case "oval": {
+        const rx = getNumber("rx");
+        const ry = getNumber("ry");
+        if (rx === undefined || ry === undefined) return undefined;
+        shape = new Oval(0, 0, rx, ry, style);
         break;
+      }
       case "line": {
+        const ax = getNumber("ax");
+        const ay = getNumber("ay");
+        const bx = getNumber("bx");
+        const by = getNumber("by");
+        if (ax === undefined || ay === undefined || bx === undefined || by === undefined) {
+          return undefined;
+        }
         const line = new Line(0, 0, 0, 0, style);
-        line.ax = Number(geometry.ax);
-        line.ay = Number(geometry.ay);
-        line.bx = Number(geometry.bx);
-        line.by = Number(geometry.by);
+        line.ax = ax;
+        line.ay = ay;
+        line.bx = bx;
+        line.by = by;
         shape = line;
         break;
       }
       case "triangle": {
-        const vertices = geometry.vertices as Point2D[];
-        if (!Array.isArray(vertices) || vertices.length !== 3) throw new Error("Некорректные вершины треугольника");
-        const triangle = new Triangle({ x: 0, y: 0 }, { x: 0, y: 0 }, { x: 0, y: 0 }, style);
-        vertices.forEach((vertex, index) => triangle.setControlPoint(index, point(vertex)));
+        const vertices = getPoints("vertices", 3);
+        if (!vertices) return undefined;
+        const triangle = new Triangle(
+          { x: 0, y: 0 },
+          { x: 0, y: 0 },
+          { x: 0, y: 0 },
+          style
+        );
+        vertices.forEach((vertex, index) => triangle.setControlPoint(index, vertex));
         shape = triangle;
         break;
       }
       case "cubic-bezier": {
-        const points = geometry.controlPoints as Point2D[];
-        if (!Array.isArray(points) || points.length !== 4) throw new Error("Некорректные контрольные точки кубической кривой");
-        const curve = new CubicBezier({ x: 0, y: 0 }, { x: 0, y: 0 }, { x: 0, y: 0 }, { x: 0, y: 0 }, style);
-        points.forEach((controlPoint, index) => curve.setControlPoint(index, point(controlPoint)));
+        const points = getPoints("controlPoints", 4);
+        if (!points) return undefined;
+        const curve = new CubicBezier(
+          { x: 0, y: 0 },
+          { x: 0, y: 0 },
+          { x: 0, y: 0 },
+          { x: 0, y: 0 },
+          style
+        );
+        points.forEach((point, index) => curve.setControlPoint(index, point));
         shape = curve;
         break;
       }
       case "quadratic-bezier": {
-        const points = geometry.controlPoints as Point2D[];
-        if (!Array.isArray(points) || points.length !== 3) throw new Error("Некорректные контрольные точки квадратичной кривой");
-        const curve = new QuadraticBezier({ x: 0, y: 0 }, { x: 0, y: 0 }, { x: 0, y: 0 }, style);
-        points.forEach((controlPoint, index) => curve.setControlPoint(index, point(controlPoint)));
+        const points = getPoints("controlPoints", 3);
+        if (!points) return undefined;
+        const curve = new QuadraticBezier(
+          { x: 0, y: 0 },
+          { x: 0, y: 0 },
+          { x: 0, y: 0 },
+          style
+        );
+        points.forEach((point, index) => curve.setControlPoint(index, point));
         shape = curve;
         break;
       }
       case "path-bezier": {
-        const anchors = geometry.anchors as Point2D[];
-        if (!Array.isArray(anchors)) throw new Error("Некорректные узлы кривой");
-        const mode = geometry.mode;
-        const path = new PathBezier([], mode === "bezier" || mode === "catmull" ? mode : "polyline", Boolean(geometry.closed), style);
-        anchors.forEach((anchor) => path.addPointLocal(point(anchor)));
+        const anchors = getPoints("anchors");
+        if (!anchors) return undefined;
+        const mode = geometry.mode === "bezier" || geometry.mode === "catmull"
+          ? geometry.mode
+          : "polyline";
+        const closed = typeof geometry.closed === "boolean" ? geometry.closed : false;
+        const path = new PathBezier([], mode, closed, style);
+        anchors.forEach((anchor) => path.addPointLocal(anchor));
         shape = path;
         break;
       }
       default:
-        throw new Error(`Неподдерживаемый тип фигуры: ${item.type}`);
+        // Неизвестный тип не должен мешать загрузке остальных фигур проекта.
+        return undefined;
     }
 
-    shape.transform = { ...item.transform };
+    if (typeof data.id === "string" && data.id) shape.restoreId(data.id);
+
+    const transform = isRecord(data.transform) ? data.transform : {};
+    const transformValue = (key: string, fallback: number): number => {
+      const value = transform[key];
+      return typeof value === "number" && Number.isFinite(value) ? value : fallback;
+    };
+    shape.transform = {
+      x: transformValue("x", 0),
+      y: transformValue("y", 0),
+      rotation: transformValue("rotation", 0),
+      scaleX: transformValue("scaleX", 1),
+      scaleY: transformValue("scaleY", 1),
+    };
+
     return shape;
+  } catch {
+    // Ошибка одной записи не должна прерывать восстановление всего проекта.
+    return undefined;
+  }
+}
+
+export function restoreShapes(data: ShapeJSON[]): Shape[] {
+  if (!Array.isArray(data)) return [];
+
+  return data.flatMap((item) => {
+    const shape = shapeFromJSON(item);
+    return shape ? [shape] : [];
   });
 }

@@ -36,7 +36,7 @@ export function styleColor(
 export abstract class Shape {
   abstract readonly type: string;
 
-  readonly id: string;
+  id: string;
   transform: Transform;
 
   fillStyle: string | null;
@@ -68,6 +68,14 @@ export abstract class Shape {
     this.strokeStyle = s.strokeStyle;
     this.strokeWidth = s.strokeWidth;
     this.strokeOpacity = s.strokeOpacity;
+  }
+
+  restoreId(id: string): void {
+    this.id = id;
+    const match = /^shape_(\d+)$/.exec(id);
+    if (match) {
+      nextShapeId = Math.max(nextShapeId, Number(match[1]) + 1);
+    }
   }
 
   abstract drawRaster(r: RasterTarget): void;
