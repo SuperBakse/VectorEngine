@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Plus, Trash2 } from "lucide-react";
+import { Plus } from "lucide-react";
 import { createProject, getProjects, type Project } from "../lib/projects";
 
 export default function Gallery() {
