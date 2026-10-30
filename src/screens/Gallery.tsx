@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Plus, Trash2 } from "lucide-react";
-import { createProject, getProjects, saveProject, type Project } from "../lib/projects";
+import { createProject, getProjects, type Project } from "../lib/projects";
 
 export default function Gallery() {
   const [projects, setProjects] = useState<Project[]>(() => getProjects());
