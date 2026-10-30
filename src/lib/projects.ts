@@ -144,9 +144,10 @@ export async function createProject(
 }
 
 export async function exportProjectFile(project: Project): Promise<boolean> {
+  const directory = await ensureProjectsDirectory();
   const path = await save({
     title: "Экспорт проекта",
-    defaultPath: `${project.name.replace(/[\\/:*?"<>|]/g, "_") || "project"}.json`,
+    defaultPath: await join(directory, `${project.name.replace(/[\\/:*?"<>|]/g, "_") || "project"}.json`),
     filters: [{ name: "JSON project", extensions: ["json"] }],
   });
   if (!path) return false;
@@ -158,6 +159,7 @@ export async function exportProjectFile(project: Project): Promise<boolean> {
 export async function importProjectFile(): Promise<Project | undefined> {
   const selected = await open({
     title: "Импорт проекта из JSON",
+    defaultPath: await projectsDirectory(),
     multiple: false,
     filters: [{ name: "JSON project", extensions: ["json"] }],
   });
