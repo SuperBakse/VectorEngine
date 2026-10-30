@@ -1,25 +1,16 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Plus } from "lucide-react";
-
-interface Project {
-  id: string;
-  name: string;
-  date: string;
-}
+import { Plus, Trash2 } from "lucide-react";
+import { createProject, getProjects, saveProject, type Project } from "../lib/projects";
 
 export default function Gallery() {
-  const [projects, setProjects] = useState<Project[]>([]);
+  const [projects, setProjects] = useState<Project[]>(() => getProjects());
 
   const addProject = () => {
     const id = String(Date.now());
-    const newProject: Project = {
-      id,
-      name: `Проект ${projects.length + 1}`,
-      date: new Date().toLocaleDateString("ru-RU"),
-    };
-    setProjects([...projects, newProject]);
+    const newProject = createProject(id, `Проект ${projects.length + 1}`);
+    setProjects((current) => [newProject, ...current]);
   };
 
   return (
@@ -34,7 +25,7 @@ export default function Gallery() {
         </button>
       </div>
 
-      {projects.length === 0 && <p className="text-slate-400">Проектов пока нет</p>}
+      {projects.length === 0 && <p className="text-slate-400">Проектов пока нет. Нажми «Создать проект», чтобы начать.</p>}
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {projects.map((p) => (
@@ -45,6 +36,7 @@ export default function Gallery() {
             >
               <div className="font-semibold">{p.name}</div>
               <div className="text-sm text-slate-400">{p.date}</div>
+              <div className="mt-2 text-xs text-slate-500">Объектов: {p.shapes.length}</div>
             </motion.div>
           </Link>
         ))}
