@@ -1,6 +1,7 @@
 // src/components/CanvasScene.tsx
 import { useEffect, useRef } from 'react';
 import { RasterRenderer, type LineAlg, type RGBA } from '../lib/raster/RasterRenderer';
+import { Line, Oval, Rect, type Shape } from '../lib/shapes';
 
 interface CanvasSceneProps {
   lineAlg: LineAlg;
@@ -31,6 +32,15 @@ const CanvasScene = ({ lineAlg }: CanvasSceneProps) => {
 
     const ro = new ResizeObserver(() => renderer.resize());
     ro.observe(containerRef.current ?? canvas);
+
+    // ЛР5: фигуры, объявленные через классы
+    const demoRect = new Rect(1250, 200, 200, 120, { fillStyle: '#ef4444', fillOpacity: 0.7, strokeWidth: 6 });
+    demoRect.transform.rotation = Math.PI / 8;
+    const shapes: Shape[] = [
+      demoRect,
+      new Line(1100, 360, 1400, 420, { strokeStyle: '#16a34a', strokeWidth: 8 }),
+      new Oval(1250, 560, 140, 70, { fillStyle: '#8b5cf6', fillOpacity: 0.5, strokeStyle: '#1e1b4b', strokeWidth: 4 }),
+    ];
 
     let raf = 0;
     const frame = () => {
@@ -65,6 +75,10 @@ const CanvasScene = ({ lineAlg }: CanvasSceneProps) => {
         for (let i = 0; i < 8; i++) {
           r.drawLine(300, 650, 600, 650 + i * 12 - 40, BLACK);
         }
+
+        // 5. ЛР5: Shape-фигуры (Rect вращается для наглядности transform)
+        demoRect.transform.rotation += 0.01;
+        for (const s of shapes) s.drawRaster(r);
 
         r.commit();
       }
