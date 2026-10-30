@@ -1,8 +1,8 @@
-import { mat3, type Point2D } from "../math/mat3";
-import type { Bounds, Transform } from "../shapes/types";
-import { Shape } from "../shapes/Shape";
+import { mat3, type Point2D } from '../math/mat3';
+import type { Bounds, Transform } from '../shapes/types';
+import { Shape } from '../shapes/Shape';
 
-export type ResizeHandle = "nw" | "n" | "ne" | "e" | "se" | "s" | "sw" | "w";
+export type ResizeHandle = 'nw' | 'n' | 'ne' | 'e' | 'se' | 's' | 'sw' | 'w';
 
 export interface EditableShape extends Shape {
   getControlPoints(): Point2D[];
@@ -12,8 +12,8 @@ export interface EditableShape extends Shape {
 export function isEditableShape(shape: Shape): shape is EditableShape {
   const candidate = shape as Shape & Partial<EditableShape>;
   return (
-    typeof candidate.getControlPoints === "function" &&
-    typeof candidate.setControlPoint === "function"
+    typeof candidate.getControlPoints === 'function' &&
+    typeof candidate.setControlPoint === 'function'
   );
 }
 
@@ -35,14 +35,14 @@ export function getResizeHandleLocalPoint(
 ): Point2D {
   const centerX = (bounds.minX + bounds.maxX) / 2;
   const centerY = (bounds.minY + bounds.maxY) / 2;
-  const x = handle.includes("w")
+  const x = handle.includes('w')
     ? bounds.minX
-    : handle.includes("e")
+    : handle.includes('e')
       ? bounds.maxX
       : centerX;
-  const y = handle.includes("n")
+  const y = handle.includes('n')
     ? bounds.minY
-    : handle.includes("s")
+    : handle.includes('s')
       ? bounds.maxY
       : centerY;
   return { x, y };
@@ -116,8 +116,8 @@ export function resizeShapeFromStart(
   const localPointer = pointToLocal(initialTransform, currentPointer);
   if (!localPointer) return;
 
-  const dirX = handle.includes("e") ? 1 : handle.includes("w") ? -1 : 0;
-  const dirY = handle.includes("s") ? 1 : handle.includes("n") ? -1 : 0;
+  const dirX = handle.includes('e') ? 1 : handle.includes('w') ? -1 : 0;
+  const dirY = handle.includes('s') ? 1 : handle.includes('n') ? -1 : 0;
   const centerX = (localBounds.minX + localBounds.maxX) / 2;
   const centerY = (localBounds.minY + localBounds.maxY) / 2;
 
