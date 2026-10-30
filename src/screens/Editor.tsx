@@ -18,14 +18,7 @@ import {
 import CanvasScene, { type EditorTool } from "../components/CanvasScene";
 import { exportProjectFile, loadProject, restoreShapes, saveProject, type Project } from "../lib/projects";
 import type { LineAlg } from "../lib/raster/RasterRenderer";
-import {
-  CubicBezier,
-  Oval,
-  PathBezier,
-  Rect,
-  Triangle as TriangleShape,
-  type Shape,
-} from "../lib/shapes";
+import type { Shape } from "../lib/shapes";
 
 const TOOLS: {
   id: EditorTool;
@@ -39,60 +32,6 @@ const TOOLS: {
   { id: "triangle", label: "Треугольник", icon: Triangle },
   { id: "path", label: "Кривая Безье", icon: PenLine },
 ];
-
-function createInitialShapes(): Shape[] {
-  return [
-    new Rect(210, 150, 150, 105, {
-      fillStyle: "#60a5fa",
-      fillOpacity: 0.28,
-      strokeStyle: "#2563eb",
-      strokeWidth: 2,
-    }),
-    new Oval(455, 155, 76, 52, {
-      fillStyle: "#a78bfa",
-      fillOpacity: 0.3,
-      strokeStyle: "#7c3aed",
-      strokeWidth: 2,
-    }),
-    new TriangleShape(
-      { x: 145, y: 345 },
-      { x: 215, y: 465 },
-      { x: 75, y: 465 },
-      {
-        fillStyle: "#fbbf24",
-        fillOpacity: 0.32,
-        strokeStyle: "#d97706",
-        strokeWidth: 2,
-      }
-    ),
-    new CubicBezier(
-      { x: 340, y: 370 },
-      { x: 405, y: 250 },
-      { x: 500, y: 490 },
-      { x: 575, y: 355 },
-      {
-        fillStyle: null,
-        strokeStyle: "#0d9488",
-        strokeWidth: 4,
-      }
-    ),
-    new PathBezier(
-      [
-        { x: 650, y: 365 },
-        { x: 715, y: 300 },
-        { x: 790, y: 420 },
-        { x: 860, y: 340 },
-      ],
-      "catmull",
-      false,
-      {
-        fillStyle: null,
-        strokeStyle: "#e11d48",
-        strokeWidth: 4,
-      }
-    ),
-  ];
-}
 
 function shapeLabel(shape: Shape): string {
   switch (shape.type) {
